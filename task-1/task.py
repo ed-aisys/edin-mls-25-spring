@@ -43,9 +43,9 @@ def distance_cosine(X, Y):
     with stream1:
         dot = distance_dot(X, Y)
     with stream2:
-        sum_X = sqrt_kernel(cp.sum(sqr_kernel(X)))
+        sum_X = sqrt_kernel(sum_kernel(sqr_kernel(X)))
     with stream3:
-        sum_Y = sqrt_kernel(cp.sum(sqr_kernel(Y)))
+        sum_Y = sqrt_kernel(sum_kernel(sqr_kernel(Y)))
     cp.cuda.Stream.null.synchronize()
     Z = mult_kernel(sum_X, sum_Y)
     W = divide_kernel(dot, Z)
@@ -53,8 +53,6 @@ def distance_cosine(X, Y):
     return U
 
 def distance_l2(X, Y):
-    X = cp.array(X)
-    Y = cp.array(Y)
     Z = add_kernel(X, Y)
     W = sqr_kernel(Z)
     U = sum_kernel(W)
@@ -62,14 +60,11 @@ def distance_l2(X, Y):
     return V
 
 def distance_dot(X, Y):
-    X = cp.array(X)
-    Y = cp.array(Y)
     Z = mult_kernel(X, Y)
-    return Z
+    W = sum_kernel(Z)
+    return W
 
 def distance_manhattan(X, Y):
-    X = cp.array(X)
-    Y = cp.array(Y)
     Z = subtract_kernel(X, Y)
     W = abs_kernel(Z)
     U = sum_kernel(W)
