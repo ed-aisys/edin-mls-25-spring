@@ -105,7 +105,7 @@ def our_ann(N, D, A, X, K):
 
 # Example
 def test_kmeans():
-    N, D, A, X, K = testdata_kmeans("test_file.json")
+    N, D, A, K = testdata_kmeans("test_file.json")
     kmeans_result = our_kmeans(N, D, A, K)
     print(kmeans_result)
 
