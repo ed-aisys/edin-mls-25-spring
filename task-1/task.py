@@ -1,6 +1,6 @@
 import torch
 import cupy as cp
-import triton
+# import triton
 import numpy as np
 import time
 import json
@@ -10,20 +10,70 @@ from test import testdata_kmeans, testdata_knn, testdata_ann
 # ------------------------------------------------------------------------------------------------
 
 # You can create any kernel here
-# def distance_kernel(X, Y, D):
-#     pass
+
+def add_kernel(X, Y):
+    return cp.add(X, Y)
+
+def sum_kernel(X):
+    return cp.sum(X)
+
+def subtract_kernel(X, Y):
+    return cp.subtract(X, Y)
+
+def mult_kernel(X, Y):
+    return cp.multiply(X, Y)
+
+def divide_kernel(X, Y):
+    return cp.divide(X, Y)
+
+def sqrt_kernel(X):
+    return cp.sqrt(X)
+
+def sqr_kernel(X):
+    return cp.square(X)
+
+def abs_kernel(X):
+    return cp.abs(X)
 
 def distance_cosine(X, Y):
-    pass
+    # Add streams
+    stream1 = cp.cuda.Stream()
+    stream2 = cp.cuda.Stream()
+    stream3 = cp.cuda.Stream()
+    with stream1:
+        dot = distance_dot(X, Y)
+    with stream2:
+        sum_X = sqrt_kernel(cp.sum(sqr_kernel(X)))
+    with stream3:
+        sum_Y = sqrt_kernel(cp.sum(sqr_kernel(Y)))
+    cp.cuda.Stream.null.synchronize()
+    Z = mult_kernel(sum_X, sum_Y)
+    W = divide_kernel(dot, Z)
+    U = subtract_kernel(1, W)
+    return U
 
 def distance_l2(X, Y):
-    pass
+    X = cp.array(X)
+    Y = cp.array(Y)
+    Z = add_kernel(X, Y)
+    W = sqr_kernel(Z)
+    U = sum_kernel(W)
+    V = sqrt_kernel(U)
+    return V
 
 def distance_dot(X, Y):
-    pass
+    X = cp.array(X)
+    Y = cp.array(Y)
+    Z = mult_kernel(X, Y)
+    return Z
 
 def distance_manhattan(X, Y):
-    pass
+    X = cp.array(X)
+    Y = cp.array(Y)
+    Z = subtract_kernel(X, Y)
+    W = abs_kernel(Z)
+    U = sum_kernel(W)
+    return U
 
 # ------------------------------------------------------------------------------------------------
 # Your Task 1.2 code here
