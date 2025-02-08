@@ -11,30 +11,6 @@ from test import testdata_kmeans, testdata_knn, testdata_ann
 
 # You can create any kernel here
 
-def add_kernel(X, Y):
-    return cp.add(X, Y)
-
-def sum_kernel(X):
-    return cp.sum(X)
-
-def subtract_kernel(X, Y):
-    return cp.subtract(X, Y)
-
-def mult_kernel(X, Y):
-    return cp.multiply(X, Y)
-
-def divide_kernel(X, Y):
-    return cp.divide(X, Y)
-
-def sqrt_kernel(X):
-    return cp.sqrt(X)
-
-def sqr_kernel(X):
-    return cp.square(X)
-
-def abs_kernel(X):
-    return cp.abs(X)
-
 def distance_cosine(X, Y):
     # Add streams
     stream1 = cp.cuda.Stream()
@@ -43,31 +19,31 @@ def distance_cosine(X, Y):
     with stream1:
         dot = distance_dot(X, Y)
     with stream2:
-        sum_X = sqrt_kernel(sum_kernel(sqr_kernel(X)))
+        sum_X = cp.sqrt(cp.sum(cp.sqr(X)))
     with stream3:
-        sum_Y = sqrt_kernel(sum_kernel(sqr_kernel(Y)))
-    cp.cuda.Stream.null.synchronize()
-    Z = mult_kernel(sum_X, sum_Y)
-    W = divide_kernel(dot, Z)
-    U = subtract_kernel(1, W)
+        sum_Y = cp.sqrt(cp.sum(cp.sqr(Y)))
+
+    Z = cp.mult(sum_X, sum_Y)
+    W = cp.divide(dot, Z)
+    U = cp.subtract(1, W)
     return U
 
 def distance_l2(X, Y):
-    Z = add_kernel(X, Y)
-    W = sqr_kernel(Z)
-    U = sum_kernel(W)
-    V = sqrt_kernel(U)
+    Z = cp.subtract(X, Y)
+    W = cp.sqr(Z)
+    U = cp.sum(W)
+    V = cp.sqrt(U)
     return V
 
 def distance_dot(X, Y):
-    Z = mult_kernel(X, Y)
-    W = sum_kernel(Z)
+    Z = cp.multiply(X, Y)
+    W = cp.sum(Z)
     return W
 
 def distance_manhattan(X, Y):
-    Z = subtract_kernel(X, Y)
-    W = abs_kernel(Z)
-    U = sum_kernel(W)
+    Z = cp.subtract(X, Y)
+    W = cp.abs(Z)
+    U = cp.sum(W)
     return U
 
 # ------------------------------------------------------------------------------------------------
