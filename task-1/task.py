@@ -17,14 +17,13 @@ def distance_cosine(X, Y):
     stream1 = cp.cuda.Stream()
     stream2 = cp.cuda.Stream()
     stream3 = cp.cuda.Stream()
-    with stream1:
-        dot = distance_dot(X, Y)
     with stream2:
         sum_X = cp.sqrt(cp.sum(cp.square(X)))
     with stream3:
         sum_Y = cp.sqrt(cp.sum(cp.square(Y)))
-
     Z = cp.multiply(sum_X, sum_Y)
+    with stream1:
+        dot = distance_dot(X, Y)
     W = cp.divide(dot, Z)
     U = cp.subtract(1, W)
     return U
