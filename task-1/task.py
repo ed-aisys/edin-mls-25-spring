@@ -11,8 +11,29 @@ from test import testdata_kmeans, testdata_knn, testdata_ann
 # ------------------------------------------------------------------------------------------------
 
 # You can create any kernel here
+subtract_square = cp.ElementwiseKernel('float64 x, float64 y', 
+                                       'float64 z', 
+                                       '''
+                                       z = (x - y);
+                                       z = z * z;                                   
+                                       '''
+                                       )
 
-def distance_cosine(X, Y):
+subtract_abs = cp.ElementwiseKernel('float64 x, float64 y',
+                                    'float64 z',
+                                    '''
+                                    z = abs(x - y)
+                                    ''')
+
+sum_sqrt = cp.ReductionKernel('float64 x', 'float64 y', 'x', 'a + b', 'y = sqrt(a)', '0')
+
+multiply = cp.ElementwiseKernel('float64 x float64 y', 
+                                'float64 z', 
+                                '''z = x * y''')
+
+_sum = cp.ReductionKernel('float64 x', 'float64 y', 'x', 'a + b', 'y = a', '0')
+
+def distance_cosine(X, Y, use_kernel=True):
     # Add streams
     stream1 = cp.cuda.Stream()
     stream2 = cp.cuda.Stream()
@@ -28,22 +49,34 @@ def distance_cosine(X, Y):
     U = cp.subtract(1, W)
     return U
 
-def distance_l2(X, Y):
-    Z = cp.subtract(X, Y)
-    W = cp.square(Z)
-    U = cp.sum(W)
-    V = cp.sqrt(U)
+def distance_l2(X, Y, use_kernel=True):
+    if use_kernel:
+        W = subtract_square(X, Y)
+        V = sum_sqrt(W)
+    else:
+        Z = cp.subtract(X, Y)
+        W = cp.square(Z)
+        U = cp.sum(W)
+        V = cp.sqrt(U)
     return V
 
-def distance_dot(X, Y):
-    Z = cp.multiply(X, Y)
-    W = cp.sum(Z)
+def distance_dot(X, Y, use_kernel=True):
+    if use_kernel:
+        Z = multiply(X, Y)
+        W = _sum(Z)
+    else:
+        Z = cp.multiply(X, Y)
+        W = cp.sum(Z)
     return W
 
-def distance_manhattan(X, Y):
-    Z = cp.subtract(X, Y)
-    W = cp.abs(Z)
-    U = cp.sum(W)
+def distance_manhattan(X, Y, use_kernel=True):
+    if use_kernel:
+        Z = subtract_abs(X, Y)
+        U = _sum(Z)
+    else:
+        Z = cp.subtract(X, Y)
+        W = cp.abs(Z)
+        U = cp.sum(W)
     return U
 
 # ------------------------------------------------------------------------------------------------
@@ -79,7 +112,7 @@ def our_ann(N, D, A, X, K):
 # Test your code here
 # ------------------------------------------------------------------------------------------------
 
-def test_cosine(D=2):
+def test_cosine(D=2, use_kernel=True):
     X, Y = cp.random.randn(D), cp.random.randn(D)
     start = time.time()
     ours = distance_cosine(X, Y)
@@ -88,16 +121,16 @@ def test_cosine(D=2):
     assert cp.isclose([ours], [gold])
     print("Execution Time: {}".format(end - start))
 
-def test_l2(D=2):
+def test_l2(D=2, use_kernel=True):
     X, Y = cp.random.randn(D), cp.random.randn(D)
     start = time.time()
-    ours = distance_l2(X, Y)
+    ours = distance_l2(X, Y, use_kernel=True)
     end = time.time()
     gold = cp.linalg.norm(X - Y)
     assert cp.isclose([ours], [gold])
     print("Execution Time: {}".format(end - start))
 
-def test_dot(D=2):
+def test_dot(D=2, use_kernel=True):
     X, Y = cp.random.randn(D), cp.random.randn(D)
     start = time.time()
     ours = distance_dot(X, Y)
@@ -106,7 +139,7 @@ def test_dot(D=2):
     assert cp.isclose([ours], [gold])
     print("Execution Time: {}".format(end - start))
 
-def test_manhattan(D=2):
+def test_manhattan(D=2, use_kernel=True):
     X, Y = cp.random.randn(D), cp.random.randn(D)
     start = time.time()
     ours = distance_manhattan(X, Y)
