@@ -79,8 +79,8 @@ def our_ann(N, D, A, X, K):
 # Test your code here
 # ------------------------------------------------------------------------------------------------
 
-def test_cosine():
-    X, Y = cp.array([1, 2, 3]), cp. array([4, 5, 6])
+def test_cosine(D=2):
+    X, Y = cp.random.randn(D), cp.random.randn(D)
     start = time.time()
     ours = distance_cosine(X, Y)
     end = time.time()
@@ -88,8 +88,8 @@ def test_cosine():
     assert cp.isclose([ours], [gold])
     print("Execution Time: {}".format(end - start))
 
-def test_l2():
-    X, Y = cp.array([1, 2, 3]), cp. array([4, 5, 6])
+def test_l2(D=2):
+    X, Y = cp.random.randn(D), cp.random.randn(D)
     start = time.time()
     ours = distance_l2(X, Y)
     end = time.time()
@@ -97,8 +97,8 @@ def test_l2():
     assert cp.isclose([ours], [gold])
     print("Execution Time: {}".format(end - start))
 
-def test_dot():
-    X, Y = cp.array([1, 2, 3]), cp. array([4, 5, 6])
+def test_dot(D=2):
+    X, Y = cp.random.randn(D), cp.random.randn(D)
     start = time.time()
     ours = distance_dot(X, Y)
     end = time.time()
@@ -106,8 +106,8 @@ def test_dot():
     assert cp.isclose([ours], [gold])
     print("Execution Time: {}".format(end - start))
 
-def test_manhattan():
-    X, Y = cp.array([1, 2, 3]), cp. array([4, 5, 6])
+def test_manhattan(D=2):
+    X, Y = cp.random.randn(D), cp.random.randn(D)
     start = time.time()
     ours = distance_manhattan(X, Y)
     end = time.time()
@@ -140,11 +140,13 @@ def recall_rate(list1, list2):
     return len(set(list1) & set(list2)) / len(list1)
 
 if __name__ == "__main__":
+    print("Dimension: 2")
+    D = 2
     print("Cosine Distance Test")
-    test_cosine()
+    test_cosine(D)
     print("L2 Distance Test")
-    test_l2()
+    test_l2(D)
     print("Dot Distance Test")
-    test_dot()
+    test_dot(D)
     print("Manhattan Distance Test")
-    test_manhattan()
+    test_manhattan(D)
