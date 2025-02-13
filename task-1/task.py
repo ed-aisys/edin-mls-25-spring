@@ -118,6 +118,7 @@ def test_cosine(D=2, use_kernel=True):
     gold = 1 - torch.cosine_similarity(torch.tensor(X, dtype=float), torch.tensor(Y, dtype=float), dim=0).item()
     assert cp.isclose([ours], [gold])
     print("Execution Time: {}".format(end - start))
+    return end-start
 
 def test_l2(D=2, use_kernel=True):
     X, Y = cp.random.randn(D), cp.random.randn(D)
@@ -127,6 +128,7 @@ def test_l2(D=2, use_kernel=True):
     gold = cp.linalg.norm(X - Y)
     assert cp.isclose([ours], [gold])
     print("Execution Time: {}".format(end - start))
+    return end-start
 
 def test_dot(D=2, use_kernel=True):
     X, Y = cp.random.randn(D), cp.random.randn(D)
@@ -136,6 +138,7 @@ def test_dot(D=2, use_kernel=True):
     gold = cp.dot(X, Y)
     assert cp.isclose([ours], [gold])
     print("Execution Time: {}".format(end - start))
+    return end-start
 
 def test_manhattan(D=2, use_kernel=True):
     X, Y = cp.random.randn(D), cp.random.randn(D)
@@ -145,6 +148,7 @@ def test_manhattan(D=2, use_kernel=True):
     gold = scipy.spatial.distance.cityblock(X.get(), Y.get())
     assert cp.isclose([ours], [gold])
     print("Execution Time: {}".format(end - start))
+    return end-start
 
 # Example
 def test_kmeans():
@@ -173,19 +177,26 @@ def recall_rate(list1, list2):
 if __name__ == "__main__":
     D = 2**15
     print(f"Dimension: {D}")
+    print("----------------------------------------")
     print("Cosine Distance Test (Kernel)")
-    test_cosine(D)
+    cosine_kernel = test_cosine(D)
     print("Cosine Distance Test (API)")
-    test_cosine(D, use_kernel=False)
+    cosine_api = test_cosine(D, use_kernel=False)
     print("L2 Distance Test (Kernel)")
-    test_l2(D)
+    l2_kernel = test_l2(D)
     print("L2 Distance Test (API)")
-    test_l2(D, use_kernel=False)
+    l2_api = test_l2(D, use_kernel=False)
     print("Dot Distance Test (Kernel)")
-    test_dot(D)
+    dot_kernel = test_dot(D)
     print("Dot Distance Test (API)")
-    test_dot(D, use_kernel=False)
+    dot_api = test_dot(D, use_kernel=False)
     print("Manhattan Distance Test (Kernel)")
-    test_manhattan(D)
+    manhattan_kernel = test_manhattan(D)
     print("Manhattan Distance Test (API)")
-    test_manhattan(D, use_kernel=False)
+    manhattan_api = test_manhattan(D, use_kernel=False)
+    print("----------------------------------------")
+    print("Differences in Speed (Positive means API is faster than Kernel)")
+    print(f"Cosine Difference: {cosine_kernel-cosine_api}")
+    print(f"L2 Difference: {l2_kernel-l2_api}")
+    print(f"Dot Difference: {dot_kernel-dot_api}")
+    print(f"Manhattan Difference: {manhattan_kernel-manhattan_api}")
