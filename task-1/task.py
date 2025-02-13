@@ -27,11 +27,13 @@ subtract_abs = cp.ElementwiseKernel('float64 x, float64 y',
 
 sum_sqrt = cp.ReductionKernel('float64 x', 'float64 y', 'x', 'a + b', 'y = sqrt(a)', '0')
 
-multiply = cp.ElementwiseKernel('float64 x float64 y', 
+multiply = cp.ElementwiseKernel('float64 x, float64 y', 
                                 'float64 z', 
                                 '''z = x * y''')
 
 _sum = cp.ReductionKernel('float64 x', 'float64 y', 'x', 'a + b', 'y = a', '0')
+
+square = cp.ElementwiseKernel('float64 x', 'float64 y', '''y = x * x''')
 
 def distance_cosine(X, Y, use_kernel=True):
     # Add streams
@@ -39,12 +41,21 @@ def distance_cosine(X, Y, use_kernel=True):
     stream2 = cp.cuda.Stream()
     stream3 = cp.cuda.Stream()
     with stream2:
-        sum_X = cp.sqrt(cp.sum(cp.square(X)))
+        if use_kernel:
+            sum_X = sum_sqrt(square(X))
+        else:
+            sum_X = cp.sqrt(cp.sum(cp.square(X)))
     with stream3:
-        sum_Y = cp.sqrt(cp.sum(cp.square(Y)))
-    Z = cp.multiply(sum_X, sum_Y)
+        if use_kernel:
+            sum_Y = sum_sqrt(square(Y))
+        else:
+            sum_Y = cp.sqrt(cp.sum(cp.square(Y)))
+    if use_kernel:
+        Z = multiply(sum_X, sum_Y)
+    else:
+        Z = cp.multiply(sum_X, sum_Y)
     with stream1:
-        dot = distance_dot(X, Y)
+        dot = distance_dot(X, Y, use_kernel=use_kernel)
     W = cp.divide(dot, Z)
     U = cp.subtract(1, W)
     return U
@@ -115,7 +126,7 @@ def our_ann(N, D, A, X, K):
 def test_cosine(D=2, use_kernel=True):
     X, Y = cp.random.randn(D), cp.random.randn(D)
     start = time.time()
-    ours = distance_cosine(X, Y)
+    ours = distance_cosine(X, Y, use_kernel=True)
     end = time.time()
     gold = 1 - torch.cosine_similarity(torch.tensor(X, dtype=float), torch.tensor(Y, dtype=float), dim=0).item()
     assert cp.isclose([ours], [gold])
@@ -133,7 +144,7 @@ def test_l2(D=2, use_kernel=True):
 def test_dot(D=2, use_kernel=True):
     X, Y = cp.random.randn(D), cp.random.randn(D)
     start = time.time()
-    ours = distance_dot(X, Y)
+    ours = distance_dot(X, Y, use_kernel=True)
     end = time.time()
     gold = cp.dot(X, Y)
     assert cp.isclose([ours], [gold])
@@ -142,7 +153,7 @@ def test_dot(D=2, use_kernel=True):
 def test_manhattan(D=2, use_kernel=True):
     X, Y = cp.random.randn(D), cp.random.randn(D)
     start = time.time()
-    ours = distance_manhattan(X, Y)
+    ours = distance_manhattan(X, Y, use_kernel=True)
     end = time.time()
     gold = scipy.spatial.distance.cityblock(X.get(), Y.get())
     assert cp.isclose([ours], [gold])
