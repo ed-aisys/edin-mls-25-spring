@@ -36,39 +36,27 @@ _sum = cp.ReductionKernel('float64 x', 'float64 y', 'x', 'a + b', 'y = a', '0')
 square = cp.ElementwiseKernel('float64 x', 'float64 y', '''y = x * x''')
 
 def distance_cosine(X, Y, use_kernel=True):
-    # Add streams
-    stream1 = cp.cuda.Stream()
-    stream2 = cp.cuda.Stream()
-    stream3 = cp.cuda.Stream()
-    with stream2:
-        if use_kernel:
-            sum_X = sum_sqrt(square(X))
-        else:
-            sum_X = cp.sqrt(cp.sum(cp.square(X)))
-    with stream3:
-        if use_kernel:
-            sum_Y = sum_sqrt(square(Y))
-        else:
-            sum_Y = cp.sqrt(cp.sum(cp.square(Y)))
     if use_kernel:
+        sum_X = sum_sqrt(square(X))
+        sum_Y = sum_sqrt(square(Y))
+        dot = cp.dot(X, Y)
         Z = multiply(sum_X, sum_Y)
+        W = cp.divide(dot, Z)
+        V = cp.subtract(1, W)
     else:
-        Z = cp.multiply(sum_X, sum_Y)
-    with stream1:
-        dot = distance_dot(X, Y, use_kernel=use_kernel)
-    W = cp.divide(dot, Z)
-    U = cp.subtract(1, W)
-    return U
+        sum_X = cp.linalg.norm(X)
+        sum_Y = cp.linalg.norm(Y)
+        dot = cp.dot(X, Y)
+        W = cp.divide(dot, (sum_X * sum_Y))
+        V = 1 - W
+    return V
 
 def distance_l2(X, Y, use_kernel=True):
     if use_kernel:
         W = subtract_square(X, Y)
         V = sum_sqrt(W)
     else:
-        Z = cp.subtract(X, Y)
-        W = cp.square(Z)
-        U = cp.sum(W)
-        V = cp.sqrt(U)
+        V = cp.linalg.norm(X - Y)
     return V
 
 def distance_dot(X, Y, use_kernel=True):
@@ -76,8 +64,7 @@ def distance_dot(X, Y, use_kernel=True):
         Z = multiply(X, Y)
         W = _sum(Z)
     else:
-        Z = cp.multiply(X, Y)
-        W = cp.sum(Z)
+        W = cp.dot(X, Y)
     return W
 
 def distance_manhattan(X, Y, use_kernel=True):
@@ -85,9 +72,7 @@ def distance_manhattan(X, Y, use_kernel=True):
         Z = subtract_abs(X, Y)
         U = _sum(Z)
     else:
-        Z = cp.subtract(X, Y)
-        W = cp.abs(Z)
-        U = cp.sum(W)
+        U = cp.sum(cp.abs(X - Y))
     return U
 
 # ------------------------------------------------------------------------------------------------
@@ -126,7 +111,7 @@ def our_ann(N, D, A, X, K):
 def test_cosine(D=2, use_kernel=True):
     X, Y = cp.random.randn(D), cp.random.randn(D)
     start = time.time()
-    ours = distance_cosine(X, Y, use_kernel=True)
+    ours = distance_cosine(X, Y, use_kernel=use_kernel)
     end = time.time()
     gold = 1 - torch.cosine_similarity(torch.tensor(X, dtype=float), torch.tensor(Y, dtype=float), dim=0).item()
     assert cp.isclose([ours], [gold])
@@ -135,7 +120,7 @@ def test_cosine(D=2, use_kernel=True):
 def test_l2(D=2, use_kernel=True):
     X, Y = cp.random.randn(D), cp.random.randn(D)
     start = time.time()
-    ours = distance_l2(X, Y, use_kernel=True)
+    ours = distance_l2(X, Y, use_kernel=use_kernel)
     end = time.time()
     gold = cp.linalg.norm(X - Y)
     assert cp.isclose([ours], [gold])
@@ -144,7 +129,7 @@ def test_l2(D=2, use_kernel=True):
 def test_dot(D=2, use_kernel=True):
     X, Y = cp.random.randn(D), cp.random.randn(D)
     start = time.time()
-    ours = distance_dot(X, Y, use_kernel=True)
+    ours = distance_dot(X, Y, use_kernel=use_kernel)
     end = time.time()
     gold = cp.dot(X, Y)
     assert cp.isclose([ours], [gold])
@@ -153,7 +138,7 @@ def test_dot(D=2, use_kernel=True):
 def test_manhattan(D=2, use_kernel=True):
     X, Y = cp.random.randn(D), cp.random.randn(D)
     start = time.time()
-    ours = distance_manhattan(X, Y, use_kernel=True)
+    ours = distance_manhattan(X, Y, use_kernel=use_kernel)
     end = time.time()
     gold = scipy.spatial.distance.cityblock(X.get(), Y.get())
     assert cp.isclose([ours], [gold])
@@ -184,8 +169,8 @@ def recall_rate(list1, list2):
     return len(set(list1) & set(list2)) / len(list1)
 
 if __name__ == "__main__":
-    print("Dimension: 2")
-    D = 2
+    D = 2**15
+    print(f"Dimension: {D}")
     print("Cosine Distance Test")
     test_cosine(D)
     print("L2 Distance Test")
@@ -194,3 +179,13 @@ if __name__ == "__main__":
     test_dot(D)
     print("Manhattan Distance Test")
     test_manhattan(D)
+    D = 2**15
+    print(f"Dimension: {D}")
+    print("Cosine Distance Test")
+    test_cosine(D, use_kernel=False)
+    print("L2 Distance Test")
+    test_l2(D, use_kernel=False)
+    print("Dot Distance Test")
+    test_dot(D, use_kernel=False)
+    print("Manhattan Distance Test")
+    test_manhattan(D, use_kernel=False)
