@@ -35,14 +35,16 @@ _sum = cp.ReductionKernel('float64 x', 'float64 y', 'x', 'a + b', 'y = a', '0')
 
 square = cp.ElementwiseKernel('float64 x', 'float64 y', '''y = x * x''')
 
+divide = cp.ElementwiseKernel('float64 x, float64 y', 'float64 z', '''z = x / y''')
+
 def distance_cosine(X, Y, use_kernel=True):
     if use_kernel:
         sum_X = sum_sqrt(square(X))
         sum_Y = sum_sqrt(square(Y))
-        dot = cp.dot(X, Y)
+        dot = _sum(multiply(X, Y))
         Z = multiply(sum_X, sum_Y)
-        W = cp.divide(dot, Z)
-        V = cp.subtract(1, W)
+        W = divide(dot, Z)
+        V = 1 - W
     else:
         sum_X = cp.linalg.norm(X)
         sum_Y = cp.linalg.norm(Y)
@@ -171,21 +173,19 @@ def recall_rate(list1, list2):
 if __name__ == "__main__":
     D = 2**15
     print(f"Dimension: {D}")
-    print("Cosine Distance Test")
+    print("Cosine Distance Test (Kernel)")
     test_cosine(D)
-    print("L2 Distance Test")
-    test_l2(D)
-    print("Dot Distance Test")
-    test_dot(D)
-    print("Manhattan Distance Test")
-    test_manhattan(D)
-    D = 2**15
-    print(f"Dimension: {D}")
-    print("Cosine Distance Test")
+    print("Cosine Distance Test (API)")
     test_cosine(D, use_kernel=False)
-    print("L2 Distance Test")
+    print("L2 Distance Test (Kernel)")
+    test_l2(D)
+    print("L2 Distance Test (API)")
     test_l2(D, use_kernel=False)
-    print("Dot Distance Test")
+    print("Dot Distance Test (Kernel)")
+    test_dot(D)
+    print("Dot Distance Test (API)")
     test_dot(D, use_kernel=False)
-    print("Manhattan Distance Test")
+    print("Manhattan Distance Test (Kernel)")
+    test_manhattan(D)
+    print("Manhattan Distance Test (API)")
     test_manhattan(D, use_kernel=False)
