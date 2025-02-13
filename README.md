@@ -17,6 +17,7 @@ The full course schedule, assessments, and additional details are available in t
 ---
 
 ## Last Update
+- **[11/02/2025]** Update instructions of pytorch demo. If you encounter a `No disk space` error, try logging into Interactive mode first and installing the environment on the node.
 - **[05/02/2025]** We have uploaded the code template for the first part of the assessment into the `task-1` folder. Additionally, we have relocated the `pytorch-demo` to the `resources` directory and have included materials for `gpu-programming` in the same directory. The part 1 specification in under the `Assessment` section on Learn.
 ---
 
