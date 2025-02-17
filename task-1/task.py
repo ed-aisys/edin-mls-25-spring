@@ -185,7 +185,7 @@ def our_kmeans(N, D, A, K, use_kernel=True):
         
         centroids = new_centroids
 
-    return labels.get().tolist(), centroids.get().tolist()
+    return labels, centroids
 
 # ------------------------------------------------------------------------------------------------
 # Your Task 2.2 code here
