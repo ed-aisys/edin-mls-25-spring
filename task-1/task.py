@@ -6,18 +6,15 @@ import time
 import json
 import scipy
 from test import testdata_kmeans, testdata_knn, testdata_ann
-# ------------------------------------------------------------------------------------------------
-# Your Task 1.1 code here
-# ------------------------------------------------------------------------------------------------
 
 # You can create any kernel here
 subtract_square = cp.ElementwiseKernel('float64 x, float64 y', 
-                                       'float64 z', 
-                                       '''
-                                       z = (x - y);
+                                    'float64 z', 
+                                    '''
+                                    z = (x - y);
                                        z = z * z;                                   
-                                       '''
-                                       )
+                                    '''
+                                    )
 
 subtract_abs = cp.ElementwiseKernel('float64 x, float64 y',
                                     'float64 z',
@@ -83,9 +80,39 @@ def distance_manhattan(X, Y, use_kernel=True):
 
 # You can create any kernel here
 
-def our_knn(N, D, A, X, K):
-    pass
+def our_knn(N, D, A, X, K, distance_metric="l2", use_kernel = True):
 
+    if A.shape != (N, D) or X.shape != (D,):
+        raise ValueError("Shape mismatch: A should be (N, D) and X should be (D,)")
+
+    # Compute distances based on chosen metric
+    if use_kernel:
+        if distance_metric == "cosine":
+            distances = distance_cosine(A, X, use_kernel)
+        elif distance_metric == "l2":
+            distances = distance_l2(A, X, use_kernel)
+        elif distance_metric == "dot":
+            distances = -distance_dot(A, X, use_kernel)
+        elif distance_metric == "manhattan":
+            distances = distance_manhattan(A, X, use_kernel) 
+        else:
+            raise ValueError("Unsupported distance metric. Choose from ['l2', 'cosine', 'manhattan', 'dot']")
+    else:
+        if distance_metric == "cosine":
+            distances = cp.array([distance_cosine(A[i], X, use_kernel) for i in range(N)])
+        elif distance_metric == "l2":
+            distances = cp.array([distance_l2(A[i], X, use_kernel) for i in range(N)])
+        elif distance_metric == "dot":
+            distances = -cp.array([distance_dot(A[i], X, use_kernel) for i in range(N)])
+        elif distance_metric == "manhattan":
+            distances = cp.array([distance_manhattan(A[i], X, use_kernel) for i in range(N)])
+        else:
+            raise ValueError("Unsupported distance metric. Choose from ['l2', 'cosine', 'manhattan', 'dot']")
+
+        # Get the indices of the top K smallest distances
+    top_k_indices = cp.argsort(distances)[:K]
+
+    return top_k_indices
 # ------------------------------------------------------------------------------------------------
 # Your Task 2.1 code here
 # ------------------------------------------------------------------------------------------------
