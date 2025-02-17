@@ -274,10 +274,30 @@ def test_knn():
     knn_result = our_knn(N, D, A, X, K)
     print(knn_result)
     
-def test_ann():
-    N, D, A, X, K = testdata_ann("test_file.json")
-    ann_result = our_ann(N, D, A, X, K)
-    print(ann_result)
+def test_our_ann():
+    # Generate test data
+    N, D, A, X, K = testdata_ann()
+    
+    # Convert data to CuPy arrays
+    A_cp = cp.asarray(A)
+    X_cp = cp.asarray(X)
+    
+    # Run the our_ann function
+    top_k_indices = our_ann(N, D, A_cp, X_cp, K)
+    
+    # Convert the result back to NumPy for assertion
+    top_k_indices_np = cp.asnumpy(top_k_indices)
+    
+    # Check the length of the result
+    assert len(top_k_indices_np) == K, f"Expected {K} indices, but got {len(top_k_indices_np)}"
+    
+    # Check if the indices are within the valid range
+    assert np.all(top_k_indices_np < N), "Some indices are out of range"
+    
+    print("top_k_indices_np.shape:", top_k_indices_np.shape)
+    print("top_k_indices_np:", top_k_indices_np)
+    
+    print("Test passed!")
     
 def recall_rate(list1, list2):
     """
@@ -288,6 +308,7 @@ def recall_rate(list1, list2):
     return len(set(list1) & set(list2)) / len(list1)
 
 if __name__ == "__main__":
+    ### Test Distance Functions
     D = 2**15
     print(f"Dimension: {D}")
     print("----------------------------------------")
@@ -313,3 +334,9 @@ if __name__ == "__main__":
     print(f"L2 Difference: {l2_kernel-l2_api}")
     print(f"Dot Difference: {dot_kernel-dot_api}")
     print(f"Manhattan Difference: {manhattan_kernel-manhattan_api}")
+    
+    ### Test KNN
+    ### Test KMeans
+    
+    ### Test Ann
+    test_our_ann()
